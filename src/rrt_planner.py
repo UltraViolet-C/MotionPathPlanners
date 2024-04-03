@@ -1,6 +1,5 @@
 #!/usr/bin/python
 import sys
-import time
 import pickle
 import numpy as np
 import random
@@ -8,7 +7,7 @@ import cv2
 from matplotlib import pyplot as plt
 
 from itertools import product
-from math import cos, sin, pi, sqrt
+from math import sqrt
 
 from plotting_utils import draw_plan
 from priority_queue import priority_dict
