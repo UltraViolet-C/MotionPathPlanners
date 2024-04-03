@@ -4,6 +4,8 @@ import sys
 class FastMarchingTreesPlanner:
     """
     Applies the Fast-Marching Trees algorithm on a given grid world
+
+    Implementation taken from Janson et al.'s paper "Fast Marching Tree: a Fast Marching Sampling-Based Method for Optimal Motion Planning in Many Dimensions.
     """
 
     def __init__(self, world):

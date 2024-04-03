@@ -4,6 +4,8 @@ import sys
 class BITStarPlanner:
     """
     Applies the BIT* algorithm on a given grid world
+
+    Implementation taken from Gammell, Srinivasa, and Barfoot's paper at http://dx.doi.org/10.1109/ICRA.2015.7139620
     """
 
     def __init__(self, world):
