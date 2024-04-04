@@ -1,7 +1,11 @@
 #!/usr/bin/python
 import sys
 import random
+import cv2
+import numpy as np
+import pickle
 
+from plotting_utils import draw_plan
 from state import State
 
 class RRTStarPlanner:
@@ -59,6 +63,15 @@ class RRTStarPlanner:
                 min_dist = dist
 
         return closest_state
+    
+    def find_near_states(self, tree_nodes, state):
+        near_states = []
+        for node in tree_nodes:
+            dist = node.euclidean_distance(state)
+            # this value can be adjusted freely, I just chose a constant we were already using - Yuvraaj
+            if dist <= max_steering_radius * 2:
+                near_states.append(node)
+        return near_states
     
     def steer_towards(self, s_nearest, s_rand, max_radius):
         """
@@ -126,12 +139,83 @@ class RRTStarPlanner:
         if dest_state is reachable from start_state. Otherwise returns [start_state].
         Assume both source and destination are in free space.
         """
-        # TODO: implement this function
-        pass
+        assert (self.state_is_free(start_state))
+        assert (self.state_is_free(dest_state))
+
+        # The set containing the nodes of the tree
+        tree_nodes = set()
+        tree_nodes.add(start_state)
+
+        # image to be used to display the tree
+        img = np.copy(self.world)
+
+        plan = [start_state]
+
+        # TODO: figure out how to store the cost of nodes!
+        cost = {start_state: 0}
+
+        for step in range(max_num_steps):
+            s_rand = self.sample_state()
+            s_nearest = self.find_closest_state(tree_nodes, s_rand)
+            s_new = self.steer_towards(s_nearest, s_rand, max_steering_radius)
+
+            if self.path_is_obstacle_free(s_nearest, s_new):
+                tree_nodes.add(s_new)
+                cost[s_new] = cost[s_new.parent] + s_new.parent.euclidean_distance(s_new)
+                s_min = s_nearest
+                nearby_nodes = self.find_near_states(tree_nodes, s_new)
+                for s_near in nearby_nodes:
+                    if self.path_is_obstacle_free(s_near, s_new):
+                        c_dash = cost[s_near] + s_near.euclidean_distance(s_new)
+                        if c_dash < cost[s_new]:
+                            s_min = s_near
+
+                s_min.children.append(s_new)
+                for s_near in nearby_nodes:
+                    if s_near != s_min and self.path_is_obstacle_free(s_new, s_near) and cost[s_near] > cost[s_new] + s_new.euclidean_distance(s_near):
+                        # a better node has been found so refactor the tree accordingly
+                        s_parent = s_near.parent
+                        s_parent.delete_child(s_near)
+                        s_new.children.append(s_near)
+                        s_near.parent == s_new
+                
+                # check if our new node is close enough to the destination
+                if s_new.euclidean_distance(dest_state) < dest_reached_radius:
+                    dest_state.parent = s_new
+                    plan = self._follow_parent_pointers(dest_state)
+                    break
+
+                # plot the new node and edge
+                cv2.circle(img, (s_new.x, s_new.y), 2, (0,0,0))
+                cv2.line(img, (s_nearest.x, s_nearest.y), (s_new.x, s_new.y), (255,0,0))
+
+            # keep showing the image even if a new node is not added
+            cv2.imshow('image', img)
+            cv2.waitKey(10)
+        
+        draw_plan(img, plan, bgr=(0,0,255), thickness=2)
+        cv2.waitKey(0)
+        return [start_state]
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: rrt_star_planner.py occupancy_grid.pkl")
         sys.exit(1)
     
-    print("Note: Finish this class before using it lol")
+    pkl_file = open(sys.argv[1], 'rb')
+    # world is a numpy array with dimensions (rows, cols, 3 color channels)
+    world = pickle.load(pkl_file)
+    pkl_file.close()
+
+    rrt_star = RRTStarPlanner(world)
+
+    start_state = State(10, 10, None)
+    dest_state = State(500, 500, None)
+    max_num_steps = 1000     # max number of nodes to be added to the tree
+    max_steering_radius = 30 # pixels
+    dest_reached_radius = 50 # pixels
+    plan = rrt_star.plan(start_state,
+                         dest_state,
+                         max_num_steps,
+                         max_steering_radius,
+                         dest_reached_radius)
