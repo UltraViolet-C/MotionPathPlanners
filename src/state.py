@@ -33,3 +33,11 @@ class State:
     def euclidean_distance(self, state):
         assert (state)
         return sqrt((state.x - self.x)**2 + (state.y - self.y)**2)
+    
+    def delete_child(self, child):
+        # iterate through children and remove child
+        for i in range(len(self.children)):
+            if child.x == self.children[i].x and child.y == self.children[i].y:
+                self.children.pop(i)
+                child.parent = None
+                break
