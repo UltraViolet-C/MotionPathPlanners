@@ -99,16 +99,18 @@ class FastMarchingTreesPlanner:
 
 
     def visualize(self, img, path, visited) -> None:
-        # cv2.circle(img, (s_new.x, s_new.y), 2, (0,0,0))
-        # cv2.line(img, (s_nearest.x, s_nearest.y), (s_new.x, s_new.y), (255,0,0))
-
+        """
+        Plot and display all sample states, their connections, and the optimal plan.
+        """
         # plot all sampled states
         for state in self.S:
             cv2.circle(img, (state.x, state.y), 2, (192, 192, 192), -1)
 
+        # plot all connections
         for state in visited:
             cv2.line(img, (state.x, state.y), (state.parent.x, state.parent.y), (255,0,0))
 
+        # plot optimal plan
         draw_plan(img, path, bgr=(0,0,255), thickness=2)
         cv2.waitKey(0)
 
@@ -143,13 +145,11 @@ class FastMarchingTreesPlanner:
 
         i = 0
         while i < self.sample_size:
-            # x = random.randint(0, self.world.shape[1] - 1)
-            # y = random.randint(0, self.world.shape[0] - 1)
             state = State(random.randint(0, self.world.shape[1] - 1),
                            random.randint(0, self.world.shape[0] - 1),
                            None)
+
             if not self.state_is_free(state):
-                # append to list of neighbors and increment index
                 continue
             else:
                 final_sample.add(state)
@@ -181,7 +181,7 @@ class FastMarchingTreesPlanner:
         Returns:
             int: Distance between two states if there are no collisions, infinity otherwise
         """
-        if not self.collision_free(curr_state, dest_state): # check if there is a collision:
+        if not self.collision_free(curr_state, dest_state):
             return np.inf
         else:
             return curr_state.euclidean_distance(dest_state)
@@ -246,10 +246,11 @@ if __name__ == "__main__":
 
     fmt_star = FastMarchingTreesPlanner(world)
 
-    # plan(self, start_state, dest_state, radius_size):
-
     start_state = State(10, 10, None)
     dest_state = State(500, 500, None)
     radius_size = 7 # connection radius
     sample_size = 1000 # number of sample states
-    plan = fmt_star.plan(start_state, dest_state, radius_size, sample_size) 
+    plan = fmt_star.plan(start_state,
+                         dest_state,
+                         radius_size,
+                         sample_size) 
