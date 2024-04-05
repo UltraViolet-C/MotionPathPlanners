@@ -195,7 +195,7 @@ class RRTStarPlanner:
         
         draw_plan(img, plan, bgr=(0,0,255), thickness=2)
         cv2.waitKey(0)
-        return [start_state]
+        return plan
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
