@@ -2,7 +2,10 @@
 import sys
 import random
 import numpy as np
+import cv2
+import pickle
 
+from plotting_utils import draw_plan
 from state import State
 from math import sqrt, log
 
@@ -26,8 +29,7 @@ class FastMarchingTreesPlanner:
         self.dest = None
 
         # configurable values
-        self.sample_size = 1000
-        self.delta = 0.5
+        self.sample_size = 1000 # defaults to 1000
 
         # sets of sample states
         self.S = set()
@@ -35,7 +37,7 @@ class FastMarchingTreesPlanner:
         self.S_open = set()
         self.s_closed = set()
 
-    def plan(self, start_state, dest_state, radius_size):
+    def plan(self, start_state, dest_state, radius_size, sample_size):
         """
         Fast Marching Tree Algorithm planning
 
@@ -47,13 +49,18 @@ class FastMarchingTreesPlanner:
         Returns:
             None
         """
-        self.start, self.dest = start_state, dest_state
+        self.start, self.dest, self.sample_size = start_state, dest_state, sample_size
+        self.init_helper()
 
         curr_s = self.start
         cost = {s: np.inf for s in self.S}
         cost[curr_s] = 0.0
         visited = []
-        radius = radius_size * sqrt(log(self.sample_size) / self.sample_size)
+        # radius = radius_size * sqrt(log(self.sample_size) / self.sample_size)
+        radius = radius_size
+
+        # image to be used to display the tree
+        img = np.copy(self.world)
 
         while curr_s is not self.dest:
             S_open_new = set()
@@ -85,7 +92,27 @@ class FastMarchingTreesPlanner:
             curr_s = min(cost_open, key=cost_open.get)
 
         # retrieve path after reaching destination state
-        path_x, path_y = self.ExtractPath()
+        path = self._follow_parent_pointers(self.dest)
+        self.visualize(img, path, visited[1:len(visited)])
+
+        return [self.start]
+
+
+    def visualize(self, img, path, visited) -> None:
+        # cv2.circle(img, (s_new.x, s_new.y), 2, (0,0,0))
+        # cv2.line(img, (s_nearest.x, s_nearest.y), (s_new.x, s_new.y), (255,0,0))
+
+        # plot all sampled states
+        for state in self.S:
+            cv2.circle(img, (state.x, state.y), 2, (192, 192, 192), -1)
+
+        for state in visited:
+            cv2.line(img, (state.x, state.y), (state.parent.x, state.parent.y), (255,0,0))
+
+        draw_plan(img, path, bgr=(0,0,255), thickness=2)
+        cv2.waitKey(0)
+
+        return None
 
 
     def state_is_free(self, state):
@@ -103,7 +130,7 @@ class FastMarchingTreesPlanner:
         self.S.update(sample)
         self.S_open.add(self.start)
         self.S_unvisited.update(sample)
-        self.S_unvisited.update(self.dest)
+        self.S_unvisited.add(self.dest)
 
     def sample_states(self) -> set:
         """
@@ -112,11 +139,10 @@ class FastMarchingTreesPlanner:
         Returns:
             set: Containing State objects.
         """
-        num_samples = self.sample_size
         final_sample = set()
 
         i = 0
-        while i < num_samples:
+        while i < self.sample_size:
             # x = random.randint(0, self.world.shape[1] - 1)
             # y = random.randint(0, self.world.shape[0] - 1)
             state = State(random.randint(0, self.world.shape[1] - 1),
@@ -130,8 +156,7 @@ class FastMarchingTreesPlanner:
                 i += 1
         return final_sample
 
-    @staticmethod
-    def nearby(states, curr_state, radius) -> dict:
+    def nearby(self, states, curr_state, radius) -> dict:
         """
         Returns a dictionary of neighboring states within the connection radius
 
@@ -161,24 +186,21 @@ class FastMarchingTreesPlanner:
         else:
             return curr_state.euclidean_distance(dest_state)
 
-    def ExtractPath(self) -> tuple:
+    def _follow_parent_pointers(self, state):
         """
-        Returns the paths of start state to the destination state
-
-        Returns:
-            tuple: Containg the path of x's and y's from the start to destination state.
+        Returns the path [start_state, ..., destination_state] by following the
+        parent pointers.
         """
-        path_x, path_y = [], []
-        state = self.dest
 
-        while state.parent:
-            path_x.append(state.x)
-            path_y.append(state.y)
-            state = state.parent
+        curr_ptr = state
+        path = [state]
 
-        path_x.append(self.start.x)
-        path_y.append(self.start.y)
-        return path_x, path_y
+        while curr_ptr is not None:
+            path.append(curr_ptr)
+            curr_ptr = curr_ptr.parent
+
+        # return a reverse copy of the path (so that first state is starting state)
+        return path[::-1]
 
     def collision_free(self, s_from, s_to) -> bool:
         """
@@ -196,7 +218,7 @@ class FastMarchingTreesPlanner:
         if not (self.state_is_free(s_to)):
             return False
 
-        max_checks = 10
+        max_checks = 40
         d = s_from.euclidean_distance(s_to)
         for i in range(max_checks):
             # check if the inteprolated state that is float(i)/max_checks * dist(s_from, s_new)
@@ -216,3 +238,18 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: fast_marching_trees_planner.py occupancy_grid.pkl")
         sys.exit(1)
+
+    pkl_file = open(sys.argv[1], 'rb')
+    # world is a numpy array with dimensions (rows, cols, 3 color channels)
+    world = pickle.load(pkl_file)
+    pkl_file.close()
+
+    fmt_star = FastMarchingTreesPlanner(world)
+
+    # plan(self, start_state, dest_state, radius_size):
+
+    start_state = State(10, 10, None)
+    dest_state = State(500, 500, None)
+    radius_size = 7 # connection radius
+    sample_size = 1000 # number of sample states
+    plan = fmt_star.plan(start_state, dest_state, radius_size, sample_size) 
