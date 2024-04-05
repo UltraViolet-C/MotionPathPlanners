@@ -177,7 +177,7 @@ class RRTStarPlanner:
                         s_parent = s_near.parent
                         s_parent.delete_child(s_near)
                         s_new.children.append(s_near)
-                        s_near.parent == s_new
+                        s_near.parent = s_new
                 
                 # check if our new node is close enough to the destination
                 if s_new.euclidean_distance(dest_state) < dest_reached_radius:
@@ -195,7 +195,7 @@ class RRTStarPlanner:
         
         draw_plan(img, plan, bgr=(0,0,255), thickness=2)
         cv2.waitKey(0)
-        return [start_state]
+        return plan
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
