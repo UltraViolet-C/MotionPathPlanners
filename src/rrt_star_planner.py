@@ -222,4 +222,4 @@ if __name__ == "__main__":
                          max_num_steps,
                          max_steering_radius,
                          dest_reached_radius,
-                         False)
+                         True)
