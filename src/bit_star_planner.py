@@ -195,7 +195,7 @@ class BITStarPlanner:
         return True
     
 
-    def plan(self, start_state, dest_state, max_num_steps, max_steering_radius, dest_reached_radius):
+    def plan(self, start_state, dest_state, max_num_steps, max_steering_radius, dest_reached_radius, plot_graphic=True):
         """
         Returns a path as a sequence of states [start_state, ..., dest_state]
         if dest_state is reachable from start_state. Otherwise returns [start_state].
@@ -333,10 +333,9 @@ class BITStarPlanner:
                             tree_nodes.add(x)
                             q_v.add(x)
                     
-                    
-
-                    cv2.circle(img, (x.x, x.y), 2, (0,0,0))
-                    cv2.line(img, (v.x, v.y), (x.x, x.y), (255,0,0))
+                    if plot_graphic:
+                        cv2.circle(img, (x.x, x.y), 2, (0,0,0))
+                        cv2.line(img, (v.x, v.y), (x.x, x.y), (255,0,0))
 
             else:
                 q_e = set()
@@ -347,15 +346,17 @@ class BITStarPlanner:
                 best_plan = self._follow_parent_pointers(dest_state)
                 max_cost = self.cost(dest_state, start_state)
             
-            cv2.imshow('image', img)
-            cv2.waitKey(10)
+            if plot_graphic:
+                cv2.imshow('image', img)
+                cv2.waitKey(10)
 
-        draw_plan(img, best_plan, bgr=(0,0,255), thickness=2)
-        for x in best_plan:
-            print(x.x, x.y)
-        cv2.waitKey(0)
+        if plot_graphic:
+            draw_plan(img, best_plan, bgr=(0,0,255), thickness=2)
+            for x in best_plan:
+                print(x.x, x.y)
+            cv2.waitKey(0)
         
-        return best_plan        
+        return best_plan
       
 
 if __name__ == "__main__":
@@ -380,4 +381,5 @@ if __name__ == "__main__":
                     dest_state,
                     max_num_steps,
                     max_steering_radius,
-                    dest_reached_radius)
+                    dest_reached_radius,
+                    True)
