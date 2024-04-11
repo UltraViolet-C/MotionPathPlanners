@@ -382,7 +382,7 @@ if __name__ == "__main__":
     dest_state = State(500, 150, None)
 
     max_num_steps = 1000     # max number of nodes to be added to the tree
-    max_steering_radius = 50 # pixels
+    max_steering_radius = 30 # pixels
     dest_reached_radius = 50 # pixels
     plan = bit_star.plan(start_state,
                     dest_state,
