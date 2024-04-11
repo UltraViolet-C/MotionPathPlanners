@@ -204,7 +204,7 @@ class InformedRRTStarPlanner:
         
         return cost
     
-    def plan(self, start_state, dest_state, max_num_steps, max_steering_radius, dest_reached_radius, plot_graphic=True):
+    def plan(self, start_state, dest_state, max_num_steps, max_steering_radius, dest_reached_radius):
         """
         Returns a path as a sequence of states [start_state, ..., dest_state]
         if dest_state is reachable from start_state. Otherwise returns [start_state].
@@ -269,14 +269,12 @@ class InformedRRTStarPlanner:
                     s_soln.add(s_new) # add new state to set of solution states
                 
                 # plot new node and edge
-                if plot_graphic:
-                    cv2.circle(img, (s_new.x, s_new.y), 2, (0,0,0))
-                    cv2.line(img, (s_nearest.x, s_nearest.y), (s_new.x, s_new.y), (255,0,0))
+                cv2.circle(img, (s_new.x, s_new.y), 2, (0,0,0))
+                cv2.line(img, (s_nearest.x, s_nearest.y), (s_new.x, s_new.y), (255,0,0))
             
             # keep showing image even if new node is not added
-            if plot_graphic:
-                cv2.imshow('image', img)
-                cv2.waitKey(10)
+            cv2.imshow('image', img)
+            cv2.waitKey(10)
         
         # find plan by looking for c_best in s_soln and drawing that plan
         if s_soln:
@@ -284,9 +282,8 @@ class InformedRRTStarPlanner:
             s_best = min(cost, key=cost.get)
             dest_state.parent = s_best
             plan = self._follow_parent_pointers(dest_state)
-        if plot_graphic:
-            draw_plan(img, plan, bgr=(0,0,255), thickness=2)
-            cv2.waitKey(0)
+        draw_plan(img, plan, bgr=(0,0,255), thickness=2)
+        cv2.waitKey(0)
         return plan
 
 if __name__ == "__main__":
@@ -310,5 +307,4 @@ if __name__ == "__main__":
                                   dest_state,
                                   max_num_steps,
                                   max_steering_radius,
-                                  dest_reached_radius,
-                                  True)
+                                  dest_reached_radius)

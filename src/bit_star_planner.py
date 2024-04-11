@@ -244,7 +244,7 @@ class BITStarPlanner:
                         v.parent = None
                         orphans = v.children
                         v.children = []
-                        tree_nodes.remove(v)
+                        if v in tree_nodes: tree_nodes.remove(v)
                         if v.euclidean_distance(start_state) + v.euclidean_distance(dest_state) < max_cost:
                             samples.add(v)
 
@@ -264,7 +264,8 @@ class BITStarPlanner:
                             size = len(subtree)
                         
                         for c in subtree:
-                            tree_nodes.remove(c)
+
+                            if c in tree_nodes: tree_nodes.remove(c)
                             c.parent = None
                             c.children = []
                             if c.euclidean_distance(start_state) + c.euclidean_distance(dest_state) < max_cost:
@@ -331,6 +332,14 @@ class BITStarPlanner:
                             x.parent = v
                             v.children.append(x)
                             tree_nodes.add(x)
+                            if x.euclidean_distance(dest_state) < dest_reached_radius and self.path_is_obstacle_free(x, dest_state):
+                                if self.cost(x, start_state) < max_cost:
+                                    if dest_state.parent is not None:
+                                        dest_state.parent.delete_child(dest_state)
+                                    dest_state.parent = x
+                                    x.children.append(dest_state)
+                                    cv2.circle(img, (x.x, x.y), 2, (0,0,0))
+                                    cv2.line(img, (v.x, v.y), (x.x, x.y), (255,0,0))
                             q_v.add(x)
                     
                     if plot_graphic:

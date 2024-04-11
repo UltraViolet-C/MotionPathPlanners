@@ -37,7 +37,7 @@ class FastMarchingTreesPlanner:
         self.S_open = set()
         self.s_closed = set()
 
-    def plan(self, start_state, dest_state, radius_size, sample_size, plot_graphic=True):
+    def plan(self, start_state, dest_state, radius_size, sample_size):
         """
         Fast Marching Tree Algorithm planning
 
@@ -93,12 +93,9 @@ class FastMarchingTreesPlanner:
 
         # retrieve path after reaching destination state
         path = self._follow_parent_pointers(self.dest)
-        if plot_graphic:
-            self.visualize(img, path, visited[1:len(visited)])
+        self.visualize(img, path, visited[1:len(visited)])
 
-        if len(path) == 1:
-            return [self.start]
-        return path
+        return [self.start]
 
 
     def visualize(self, img, path, visited) -> None:
@@ -256,5 +253,4 @@ if __name__ == "__main__":
     plan = fmt_star.plan(start_state,
                          dest_state,
                          radius_size,
-                         sample_size,
-                         True) 
+                         sample_size) 
