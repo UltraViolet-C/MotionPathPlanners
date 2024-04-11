@@ -195,7 +195,7 @@ class BITStarPlanner:
         return True
     
 
-    def plan(self, start_state, dest_state, max_num_steps, max_steering_radius, dest_reached_radius):
+    def plan(self, start_state, dest_state, max_num_steps, max_steering_radius, dest_reached_radius, show=True):
         """
         Returns a path as a sequence of states [start_state, ..., dest_state]
         if dest_state is reachable from start_state. Otherwise returns [start_state].
@@ -244,7 +244,7 @@ class BITStarPlanner:
                         v.parent = None
                         orphans = v.children
                         v.children = []
-                        tree_nodes.remove(v)
+                        if v in tree_nodes: tree_nodes.remove(v)
                         if v.euclidean_distance(start_state) + v.euclidean_distance(dest_state) < max_cost:
                             samples.add(v)
 
@@ -264,7 +264,8 @@ class BITStarPlanner:
                             size = len(subtree)
                         
                         for c in subtree:
-                            tree_nodes.remove(c)
+
+                            if c in tree_nodes: tree_nodes.remove(c)
                             c.parent = None
                             c.children = []
                             if c.euclidean_distance(start_state) + c.euclidean_distance(dest_state) < max_cost:
@@ -331,6 +332,14 @@ class BITStarPlanner:
                             x.parent = v
                             v.children.append(x)
                             tree_nodes.add(x)
+                            if x.euclidean_distance(dest_state) < dest_reached_radius and self.path_is_obstacle_free(x, dest_state):
+                                if self.cost(x, start_state) < max_cost:
+                                    if dest_state.parent is not None:
+                                        dest_state.parent.delete_child(dest_state)
+                                    dest_state.parent = x
+                                    x.children.append(dest_state)
+                                    cv2.circle(img, (x.x, x.y), 2, (0,0,0))
+                                    cv2.line(img, (v.x, v.y), (x.x, x.y), (255,0,0))
                             q_v.add(x)
                     
                     
@@ -347,13 +356,12 @@ class BITStarPlanner:
                 best_plan = self._follow_parent_pointers(dest_state)
                 max_cost = self.cost(dest_state, start_state)
             
-            cv2.imshow('image', img)
-            cv2.waitKey(10)
-
-        draw_plan(img, best_plan, bgr=(0,0,255), thickness=2)
-        for x in best_plan:
-            print(x.x, x.y)
-        cv2.waitKey(0)
+            if show:
+                cv2.imshow('image', img)
+                cv2.waitKey(10)
+        if show:
+            draw_plan(img, best_plan, bgr=(0,0,255), thickness=2)
+            cv2.waitKey(0)
         
         return best_plan        
       
@@ -374,7 +382,7 @@ if __name__ == "__main__":
     dest_state = State(500, 150, None)
 
     max_num_steps = 1000     # max number of nodes to be added to the tree
-    max_steering_radius = 30 # pixels
+    max_steering_radius = 50 # pixels
     dest_reached_radius = 50 # pixels
     plan = bit_star.plan(start_state,
                     dest_state,
