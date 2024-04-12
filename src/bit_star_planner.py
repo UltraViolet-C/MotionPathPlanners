@@ -211,7 +211,7 @@ class BITStarPlanner:
 
         tree_nodes = set(best_plan)
         old_nodes = set()
-
+        
         q_v = set()
 
         q_e = set()
@@ -233,43 +233,45 @@ class BITStarPlanner:
         for step in range(max_num_steps):
             
             if not q_v and not q_e:
-                #pruning edges that can't improve the current best solution 
-                for v in list(samples):
-                     if v.euclidean_distance(start_state) + v.euclidean_distance(dest_state) > max_cost:
-                         samples.remove(v)
+                
+                if max_cost < np.inf:
+                    #pruning edges that can't improve the current best solution 
+                    for v in list(samples):
+                        if v.euclidean_distance(start_state) + v.euclidean_distance(dest_state) > max_cost:
+                            samples.remove(v)
 
-                for v in list(tree_nodes):
-                    if self.cost(v, start_state) + v.euclidean_distance(dest_state) > max_cost:   
-                        if v.parent is not None: v.parent.delete_child(v)
-                        v.parent = None
-                        orphans = v.children
-                        v.children = []
-                        if v in tree_nodes: tree_nodes.remove(v)
-                        if v.euclidean_distance(start_state) + v.euclidean_distance(dest_state) < max_cost:
-                            samples.add(v)
+                    for v in list(tree_nodes):
+                        if self.cost(v, start_state) + v.euclidean_distance(dest_state) > max_cost:   
+                            if v.parent is not None: v.parent.delete_child(v)
+                            v.parent = None
+                            orphans = v.children
+                            v.children = []
+                            if v in tree_nodes: tree_nodes.remove(v)
+                            if v.euclidean_distance(start_state) + v.euclidean_distance(dest_state) < max_cost:
+                                samples.add(v)
 
-                        subtree  = set(c for c in orphans)
-                        prev_size = -1
-                        size = len(subtree)
-                        while prev_size != size:
-                            prev_size = size
-                            temp = set()
-                            for c in subtree:
-                                for cc in c.children:
-                                    temp.add(cc)
-                            
-                            for c in temp:
-                                subtree.add(c)
-
+                            subtree  = set(c for c in orphans)
+                            prev_size = -1
                             size = len(subtree)
-                        
-                        for c in subtree:
+                            while prev_size != size:
+                                prev_size = size
+                                temp = set()
+                                for c in subtree:
+                                    for cc in c.children:
+                                        temp.add(cc)
+                            
+                                for c in temp:
+                                    subtree.add(c)
 
-                            if c in tree_nodes: tree_nodes.remove(c)
-                            c.parent = None
-                            c.children = []
-                            if c.euclidean_distance(start_state) + c.euclidean_distance(dest_state) < max_cost:
-                                samples.add(c)
+                                size = len(subtree)
+                        
+                            for c in subtree:
+
+                                if c in tree_nodes: tree_nodes.remove(c)
+                                c.parent = None
+                                c.children = []
+                                if c.euclidean_distance(start_state) + c.euclidean_distance(dest_state) < max_cost:
+                                    samples.add(c)
 
                             
                             
@@ -283,13 +285,18 @@ class BITStarPlanner:
                     q_v.add(n)
             
             # edge expansion
-            qv_costs = {v: self.cost(v, start_state) + v.euclidean_distance(dest_state) for v in q_v}
+            if max_cost == np.inf:
+                qv_costs = {v: v.euclidean_distance(dest_state) for v in q_v}
+            else:
+                qv_costs = {v: self.cost(v, start_state) + v.euclidean_distance(dest_state) for v in q_v}
             min_qv = np.inf
             if qv_costs:  
                 min_qv = qv_costs[min(qv_costs, key=qv_costs.get)]
 
-
-            qe_costs = {(v, w): self.cost(v, start_state) + v.euclidean_distance(w) + w.euclidean_distance(dest_state) for (v, w) in q_e}
+            if max_cost == np.inf:
+                qe_costs = {(v, w): w.euclidean_distance(dest_state) for (v, w) in q_e}
+            else:    
+                qe_costs = {(v, w): self.cost(v, start_state) + v.euclidean_distance(w) + w.euclidean_distance(dest_state) for (v, w) in q_e}
             min_qe = np.inf
             if qe_costs != {}:
                 min_qe = qe_costs[min(qe_costs, key=qe_costs.get)]
@@ -338,6 +345,7 @@ class BITStarPlanner:
                                         dest_state.parent.delete_child(dest_state)
                                     dest_state.parent = x
                                     x.children.append(dest_state)
+                                    max_cost = self.cost(dest_state, start_state)
                                     cv2.circle(img, (x.x, x.y), 2, (0,0,0))
                                     cv2.line(img, (v.x, v.y), (x.x, x.y), (255,0,0))
                             q_v.add(x)
