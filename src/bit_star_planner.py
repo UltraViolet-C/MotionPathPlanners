@@ -203,7 +203,7 @@ class BITStarPlanner:
         """
         assert (self.state_is_free(start_state))
         assert (self.state_is_free(dest_state))
-        m = 5000
+        m = 2000
 
         img = np.copy(self.world)
 
@@ -318,23 +318,23 @@ class BITStarPlanner:
 
                 qv_costs = {v: self.cost(v, start_state) for v in q_v}
                 qe_costs = {(v, w): self.cost(v, start_state) + v.euclidean_distance(w) for (v, w) in q_e}
-                
-            e = min(qe_costs, key=qe_costs.get)
-            q_e.remove(e)
-            v = e[0]
-            x = e[1]
+            
+            if qe_costs:
+                e = min(qe_costs, key=qe_costs.get)
+                q_e.remove(e)
+                v = e[0]
+                x = e[1]
 
-            #edge processing
-            #TODO prioritize reaching get any solution before opimizing existing paths
-            if self.cost(v, start_state) + v.euclidean_distance(x) + x.euclidean_distance(dest_state) < max_cost:
-                if self.path_is_obstacle_free(v, x) and start_state.euclidean_distance(v) + v.euclidean_distance(x) + x.euclidean_distance(dest_state) < max_cost:
-                    if x in tree_nodes:
-                        if self.cost(v, start_state) + v.euclidean_distance(x) < self.cost(x, start_state):
-                            if x.parent is not None: x.parent.delete_child(x)
-                            v.children.append(x)
-                            x.parent = v 
-                    else:   
-                            
+                #edge processing
+                #TODO prioritize reaching get any solution before opimizing existing paths
+                if self.cost(v, start_state) + v.euclidean_distance(x) + x.euclidean_distance(dest_state) < max_cost:
+                    if self.path_is_obstacle_free(v, x) and start_state.euclidean_distance(v) + v.euclidean_distance(x) + x.euclidean_distance(dest_state) < max_cost:
+                        if x in tree_nodes:
+                            if self.cost(v, start_state) + v.euclidean_distance(x) < self.cost(x, start_state):
+                                if x.parent is not None: x.parent.delete_child(x)
+                                v.children.append(x)
+                                x.parent = v 
+                        else:   
                             samples.remove(x)
                             x.parent = v
                             v.children.append(x)
@@ -369,11 +369,9 @@ class BITStarPlanner:
 
         if plot_graphic:
             draw_plan(img, best_plan, bgr=(0,0,255), thickness=2)
-            for x in best_plan:
-                print(x.x, x.y)
             cv2.waitKey(0)
         
-        return best_plan
+        return best_plan, len(tree_nodes)
       
 
 if __name__ == "__main__":

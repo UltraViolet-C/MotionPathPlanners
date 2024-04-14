@@ -96,9 +96,7 @@ class FastMarchingTreesPlanner:
         if plot_graphic:
             self.visualize(img, path, visited[1:len(visited)])
 
-        if len(path) == 1:
-            return [self.start]
-        return path
+        return path, len(visited)
 
 
     def visualize(self, img, path, visited) -> None:
@@ -188,6 +186,13 @@ class FastMarchingTreesPlanner:
             return np.inf
         else:
             return curr_state.euclidean_distance(dest_state)
+        
+    def total_cost(self, path):
+        cost = 0
+        for i in range(1, len(path)):
+            cost += self.cost(path[i], path[i-1])
+        
+        return cost    
 
     def _follow_parent_pointers(self, state):
         """
@@ -253,8 +258,10 @@ if __name__ == "__main__":
     dest_state = State(500, 500, None)
     radius_size = 7 # connection radius
     sample_size = 1000 # number of sample states
+    show_graph = True
     plan = fmt_star.plan(start_state,
                          dest_state,
                          radius_size,
                          sample_size,
-                         True) 
+                         show_graph)
+    

@@ -64,7 +64,7 @@ class RRTStarPlanner:
 
         return closest_state
     
-    def find_near_states(self, tree_nodes, state):
+    def find_near_states(self, tree_nodes, state, max_steering_radius):
         near_states = []
         for node in tree_nodes:
             dist = node.euclidean_distance(state)
@@ -107,6 +107,20 @@ class RRTStarPlanner:
         s_new = State(x, y, s_nearest)
         return s_new
     
+    def cost(self, state, start_state):
+        if state.x == start_state.x and state.y == start_state.y:
+            return 0
+        
+        if state.parent is None:
+            return np.inf
+        
+        cost = 0
+        while state.parent is not None:
+            cost += state.euclidean_distance(state.parent)
+            state = state.parent
+        
+        return cost
+
     def path_is_obstacle_free(self, s_from, s_to):
         """
         Returns true iff the line path from s_from to s_to
@@ -163,7 +177,7 @@ class RRTStarPlanner:
                 tree_nodes.add(s_new)
                 cost[s_new] = cost[s_new.parent] + s_new.parent.euclidean_distance(s_new)
                 s_min = s_nearest
-                nearby_nodes = self.find_near_states(tree_nodes, s_new)
+                nearby_nodes = self.find_near_states(tree_nodes, s_new, max_steering_radius)
                 for s_near in nearby_nodes:
                     if self.path_is_obstacle_free(s_near, s_new):
                         c_dash = cost[s_near] + s_near.euclidean_distance(s_new)
@@ -198,7 +212,7 @@ class RRTStarPlanner:
         if plot_graphic:
             draw_plan(img, plan, bgr=(0,0,255), thickness=2)
             cv2.waitKey(0)
-        return plan
+        return plan, len(tree_nodes)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -217,9 +231,10 @@ if __name__ == "__main__":
     max_num_steps = 1000     # max number of nodes to be added to the tree
     max_steering_radius = 30 # pixels
     dest_reached_radius = 50 # pixels
+    plot_graphic = True
     plan = rrt_star.plan(start_state,
                          dest_state,
                          max_num_steps,
                          max_steering_radius,
                          dest_reached_radius,
-                         True)
+                         plot_graphic)

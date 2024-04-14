@@ -287,7 +287,7 @@ class InformedRRTStarPlanner:
         if plot_graphic:
             draw_plan(img, plan, bgr=(0,0,255), thickness=2)
             cv2.waitKey(0)
-        return plan
+        return plan, len(tree_nodes)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

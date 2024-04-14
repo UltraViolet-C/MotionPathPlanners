@@ -131,8 +131,21 @@ class RRTPlanner:
         # Otherwise the line is free, so return true
         return True
 
+    def cost(self, state, start_state):
+        if state.x == start_state.x and state.y == start_state.y:
+            return 0
+        
+        if state.parent is None:
+            return np.inf
+        
+        cost = 0
+        while state.parent is not None:
+            cost += state.euclidean_distance(state.parent)
+            state = state.parent
+        
+        return cost
 
-    def plan(self, start_state, dest_state, max_num_steps, max_steering_radius, dest_reached_radius):
+    def plan(self, start_state, dest_state, max_num_steps, max_steering_radius, dest_reached_radius, plot_graphic=True):
         """
         Returns a path as a sequence of states [start_state, ..., dest_state]
         if dest_state is reachable from start_state. Otherwise returns [start_state].
@@ -173,16 +186,19 @@ class RRTPlanner:
                     break
 
                 # plot the new node and edge
-                cv2.circle(img, (s_new.x, s_new.y), 2, (0,0,0))
-                cv2.line(img, (s_nearest.x, s_nearest.y), (s_new.x, s_new.y), (255,0,0))
+                if plot_graphic:
+                    cv2.circle(img, (s_new.x, s_new.y), 2, (0,0,0))
+                    cv2.line(img, (s_nearest.x, s_nearest.y), (s_new.x, s_new.y), (255,0,0))
 
             # Keep showing the image for a bit even
             # if we don't add a new node and edge
-            cv2.imshow('image', img)
-            cv2.waitKey(10)
+            if plot_graphic:
+                cv2.imshow('image', img)
+                cv2.waitKey(10)
 
-        draw_plan(img, plan, bgr=(0,0,255), thickness=2)
-        cv2.waitKey(0)
+        if plot_graphic:
+            draw_plan(img, plan, bgr=(0,0,255), thickness=2)
+            cv2.waitKey(0)
         # NOTE: uncomment for plotting capabilities
         # path_distance = 0
         # for i in range(len(plan) - 1):
@@ -190,7 +206,7 @@ class RRTPlanner:
         # if path_distance == 0:
         #     return (total_nodes_visited, np.inf)
         # return (total_nodes_visited, path_distance)
-        return [start_state]
+        return plan, len(tree_nodes)
 
 
 
@@ -212,11 +228,13 @@ if __name__ == "__main__":
     max_num_steps = 1000     # max number of nodes to be added to the tree
     max_steering_radius = 30 # pixels
     dest_reached_radius = 50 # pixels
+    plot_graphic = True
     plan = rrt.plan(start_state,
                     dest_state,
                     max_num_steps,
                     max_steering_radius,
-                    dest_reached_radius)
+                    dest_reached_radius,
+                    plot_graphic)
     
     # NOTE: Uncomment the below code to plot the opt_path vs number of nodes
     # data = [] # array of tuples
