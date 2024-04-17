@@ -1,4 +1,4 @@
-# CSC477-Final-Project
+# Motion Path Planners
 
 This is Jimmy, Morgan, and Yuvraaj's final project for CSC477H5 at UTM
 
